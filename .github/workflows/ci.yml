@@ -19,10 +19,8 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: |
-          npm cache clean --force
-          npm ci
-
+        run: npm ci
+      
       - name: Build Docker image
         run: docker build -t platform-lite-app .
 

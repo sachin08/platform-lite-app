@@ -1,0 +1,46 @@
+require('dotenv').config(); //load env variables
+
+const express = require('express');
+const redis = require('redis');
+
+const app = express();
+
+const PORT = process.env.PORT || 3000;
+const MESSAGE = process.env.APP_MESSAGE || "Hello from Platform Lite 🚀";
+
+
+// Redis client setup
+const redisClient = redis.createClient({
+    url: 'redis://redis:6379'  // 👈 service name from docker-compose
+});
+
+
+redisClient.connect().catch(console.error);
+
+
+// Health check endpoint (super important in real-world apps)
+app.get('/health', (req, res) => {
+    res.json({ status: 'UP' });
+});
+
+
+// Endpoint using Redis
+app.get('/api/message', async (req, res) => {
+    try {
+        let message = await redisClient.get('message');
+
+        if (!message) {
+            message = MESSAGE;
+            await redisClient.set('message', message);
+        }
+
+        res.json({ message, source: 'redis-cache' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});

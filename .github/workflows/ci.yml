@@ -23,3 +23,6 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t platform-lite-app .
+
+      - name: Run basic check
+        run: node app.js & sleep 5 && kill $!

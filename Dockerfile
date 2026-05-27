@@ -1,5 +1,5 @@
 # Use official Node.js image
-FROM node:20-alpine
+FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 # Copy rest of the app
 COPY . .

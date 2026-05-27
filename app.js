@@ -11,7 +11,7 @@ const redis = require('redis');
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const MESSAGE = "Updated via CI/CD 🚀";
+const MESSAGE = "CI/CD version 2 🚀";
 // const MESSAGE = process.env.APP_MESSAGE || "Hello from Platform Lite 🚀";
 
 

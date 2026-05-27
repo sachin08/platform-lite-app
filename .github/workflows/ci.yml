@@ -13,8 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      
       - name: Build Docker image
-        run: docker build -t platform-lite-app .
+        run: docker build -t ghcr.io/${{ github.repository }}/platform-lite-app:latest .
 
       # - name: Run basic check
       #   run: node app.js & sleep 5 && kill $!
+      
+      - name: Push Docker image
+        run: docker push ghcr.io/${{ github.repository }}/platform-lite-app:latest

@@ -11,7 +11,8 @@ const redis = require('redis');
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const MESSAGE = process.env.APP_MESSAGE || "Hello from Platform Lite 🚀";
+const MESSAGE = "Updated via CI/CD 🚀";
+// const MESSAGE = process.env.APP_MESSAGE || "Hello from Platform Lite 🚀";
 
 
 // Redis client setup

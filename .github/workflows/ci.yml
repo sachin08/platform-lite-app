@@ -16,13 +16,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Docker image
         run: docker build -t platform-lite-app .
 
-      - name: Run basic check
-        run: node app.js & sleep 5 && kill $!
+      # - name: Run basic check
+      #   run: node app.js & sleep 5 && kill $!

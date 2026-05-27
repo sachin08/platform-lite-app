@@ -8,8 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install -g npm@11
-RUN npm ci --loglevel=error --no-audit --no-fund
+RUN npm install --omit=dev
 
 # Copy rest of the app
 COPY . .

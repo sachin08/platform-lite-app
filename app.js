@@ -81,6 +81,13 @@ app.get('/api/message', async (req, res) => {
     }
 });
 
+app.get('/orders', (req, res) => {
+  res.json({
+    service: "orders-service ✅",
+    message: "Orders endpoint working 🚀"
+  });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

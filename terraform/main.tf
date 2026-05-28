@@ -20,64 +20,13 @@ resource "aws_ecr_repository" "platform_lite" {
   }
 }
 
-resource "aws_ecs_task_definition" "platform_lite" {
-  family                   = "platform-lite-task"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = "arn:aws:iam::684651436668:role/ecsTaskExecutionRole"
-
-  container_definitions = jsonencode([
-    {
-      name      = "platform-lite-container"
-      image     = "nginx:latest"  # temporary placeholder ✅ just to create structure. CI/CD will later override image.
-      essential = true
-
-      portMappings = [
-        {
-          containerPort = 4000
-          hostPort      = 4000
-        }
-      ]
-
-      environment = [
-        {
-          name  = "PORT"
-          value = "4000"
-        },
-        {
-          name  = "APP_MESSAGE"
-          value = "Hello from Terraform 🚀"
-        }
-      ]
-
-
-logConfiguration = {
-      logDriver = "awslogs",
-      options = {
-        awslogs-group         = "/ecs/platform-lite-task"
-        awslogs-region        = "eu-west-1"
-        awslogs-stream-prefix = "ecs"
-      }
-    }
-    }
-  ])
-
-# meaning of below lifecycle - “Do NOT touch container config — CI/CD owns this”
-
-lifecycle {
-    ignore_changes = [container_definitions]
-  }
-}
-
 resource "aws_ecs_service" "platform_lite" {
   name            = "platform-lite-service"
   cluster         = aws_ecs_cluster.platform_lite.id
-  task_definition = aws_ecs_task_definition.platform_lite.arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
+  health_check_grace_period_seconds = 60
   network_configuration {
     subnets          = ["subnet-0cd00ef8dda71af31", "subnet-0d7558e1222c6c6d5", "subnet-09f45433906dbd8ba"]  # replace ✅
     assign_public_ip = true
@@ -89,6 +38,10 @@ resource "aws_ecs_service" "platform_lite" {
     target_group_arn = aws_lb_target_group.platform_lite.arn
     container_name   = "platform-lite-container"
     container_port   = 4000
+  }
+
+  lifecycle {
+    ignore_changes = [task_definition]
   }
 }
 
@@ -134,5 +87,14 @@ resource "aws_lb_listener" "platform_lite" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.platform_lite.arn
+  }
+}
+
+resource "aws_cloudwatch_log_group" "platform_lite" {
+  name              = "/ecs/platform-lite-task"
+  retention_in_days = 7
+
+  tags = {
+    Project = "platform-lite"
   }
 }

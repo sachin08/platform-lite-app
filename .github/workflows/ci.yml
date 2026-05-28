@@ -1,5 +1,9 @@
 name: CI-CD Pipeline
 
+env:
+  SERVICE_NAME: platform-lite   # default ✅
+
+
 on:
   push:
     branches:
@@ -37,13 +41,13 @@ jobs:
         run: echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
 
       - name: Build Docker image
-        run: docker build -t ${{ steps.login-ecr.outputs.registry }}/platform-lite-app:${{ env.IMAGE_TAG }} .
+        run: docker build -t ${{ steps.login-ecr.outputs.registry }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }} .
 
       # - name: Run basic check
       #   run: node app.js & sleep 5 && kill $!
 
       - name: Push Docker image
-        run: docker push ${{ steps.login-ecr.outputs.registry }}/platform-lite-app:${{ env.IMAGE_TAG }}
+        run: docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }}
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -51,13 +55,13 @@ jobs:
       - name: Register new task definition
         run: |
           TASK_DEF=$(aws ecs describe-task-definition \
-            --task-definition platform-lite-task \
+            --task-definition ${SERVICE_NAME}-task \
             --query taskDefinition)
 
           echo $TASK_DEF > task-def.json
 
           NEW_TASK_DEF=$(cat task-def.json | jq \
-            --arg IMAGE "${{ steps.login-ecr.outputs.registry }}/platform-lite-app:${{ env.IMAGE_TAG }}" \
+            --arg IMAGE "${{ steps.login-ecr.outputs.registry }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }}" \
             'del(
               .taskDefinitionArn,
               .revision,
@@ -78,7 +82,7 @@ jobs:
         run: |
           aws ecs update-service \
             --cluster platform-lite-cluster \
-            --service platform-lite-service \
-            --task-definition platform-lite-task \
+            --service ${SERVICE_NAME}-service \
+            --task-definition ${SERVICE_NAME}-task \
             --force-new-deployment \
             --region ${{ secrets.AWS_REGION }}

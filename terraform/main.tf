@@ -1,3 +1,16 @@
+locals {
+  services = {
+    platform_lite = {
+      path = "/api/*"
+      port = 4000
+    }
+    orders = {
+      path = "/orders*"
+      port = 4000
+    }
+  }
+}
+
 resource "aws_ecs_cluster" "platform_lite" {
   name = "platform-lite-cluster"
 
@@ -20,27 +33,12 @@ resource "aws_ecr_repository" "platform_lite" {
   }
 }
 
-module "platform_lite_service" {
+module "services" {
+  for_each = local.services
+
   source = "./modules/ecs-service"
 
-  service_name      = "platform-lite-service"
-  cluster_id        = aws_ecs_cluster.platform_lite.id
-  subnets           = [
-    "subnet-0cd00ef8dda71af31",
-    "subnet-0d7558e1222c6c6d5",
-    "subnet-09f45433906dbd8ba"
-  ]
-  security_groups   = ["sg-0bda7e59c0eed1582"]
-  target_group_arn  = aws_lb_target_group.platform_lite.arn
-  container_name    = "platform-lite-container"
-  container_port    = 4000
-  task_definition   = "platform-lite-task"
-}
-
-module "orders_service" {
-  source = "./modules/ecs-service"
-
-  service_name     = "orders-service"
+  service_name     = "${replace(each.key, "_", "-")}-service"
   cluster_id       = aws_ecs_cluster.platform_lite.id
   subnets          = [
     "subnet-0cd00ef8dda71af31",
@@ -48,9 +46,11 @@ module "orders_service" {
     "subnet-09f45433906dbd8ba"
   ]
   security_groups  = ["sg-0bda7e59c0eed1582"]
-  target_group_arn = aws_lb_target_group.orders.arn
+
+  target_group_arn = aws_lb_target_group.services[each.key].arn
   container_name   = "platform-lite-container"
-  container_port   = 4000
+  container_port   = each.value.port
+
   task_definition  = "platform-lite-task"
 }
 
@@ -67,43 +67,20 @@ resource "aws_lb" "platform_lite" {
 }
 
 
-resource "aws_lb_target_group" "platform_lite" {
-  name     = "platform-lite-tg"
-  port     = 4000
-  protocol = "HTTP"
-  vpc_id   = "vpc-0a1d0b31ff1d3cb8b"   # ✅ get from AWS console
-
-  target_type = "ip"
-
-  health_check {
-    path                = "/health"
-    port                = "4000"
-    protocol            = "HTTP"
-    matcher             = "200"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
-}
-
-resource "aws_lb_target_group" "orders" {
-  name     = "orders-tg"
-  port     = 4000
+resource "aws_lb_target_group" "services" {
+  for_each = local.services
+  name = "${replace(each.key, "_", "-")}-tg"
+  port     = each.value.port
   protocol = "HTTP"
   vpc_id   = "vpc-0a1d0b31ff1d3cb8b"
 
   target_type = "ip"
 
   health_check {
-    path                = "/health"
-    port                = "4000"
-    protocol            = "HTTP"
-    matcher             = "200"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
+    path     = "/health"
+    port     = tostring(each.value.port)
+    protocol = "HTTP"
+    matcher  = "200"
   }
 }
 
@@ -114,22 +91,24 @@ resource "aws_lb_listener" "platform_lite" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.platform_lite.arn
+    target_group_arn = aws_lb_target_group.services["platform_lite"].arn
   }
 }
 
-resource "aws_lb_listener_rule" "orders_rule" {
+resource "aws_lb_listener_rule" "services" {
+  for_each = local.services
+
   listener_arn = aws_lb_listener.platform_lite.arn
-  priority     = 100
+  priority = 100 + tonumber(index(sort(keys(local.services)), each.key))
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.orders.arn
+    target_group_arn = aws_lb_target_group.services[each.key].arn
   }
 
   condition {
     path_pattern {
-      values = ["/orders*"]
+      values = [each.value.path]
     }
   }
 }

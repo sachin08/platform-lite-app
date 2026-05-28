@@ -1,2 +1,15 @@
 node_modules/
 .env
+# Terraform files
+.terraform/
+terraform/.terraform/
+
+# Terraform state (optional but recommended)
+*.tfstate
+*.tfstate.*
+
+# Terraform lock file (optional decision)
+.terraform.lock.hcl
+
+# macOS
+.DS_Store

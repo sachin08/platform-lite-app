@@ -51,6 +51,16 @@ resource "aws_ecs_task_definition" "platform_lite" {
           value = "Hello from Terraform 🚀"
         }
       ]
+
+
+logConfiguration = {
+      logDriver = "awslogs",
+      options = {
+        awslogs-group         = "/ecs/platform-lite-task"
+        awslogs-region        = "eu-west-1"
+        awslogs-stream-prefix = "ecs"
+      }
+    }
     }
   ])
 

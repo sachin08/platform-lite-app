@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write   # required for OIDC ✅
 
 jobs:
   build:
@@ -19,12 +20,13 @@ jobs:
       # - name: Log in to GitHub Container Registry
       #   run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       
-      - name: Configure AWS credentials
+      # 
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::684651436668:role/GitHubActionsECSRole
           aws-region: ${{ secrets.AWS_REGION }}
+
 
       - name: Login to Amazon ECR
         id: login-ecr

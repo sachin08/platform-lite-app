@@ -20,15 +20,17 @@ resource "aws_ecs_cluster" "platform_lite" {
   }
 }
 
-resource "aws_ecr_repository" "platform_lite" {
-  name = "platform-lite-app"
+resource "aws_ecr_repository" "services" {
+  for_each = local.services
+
+  name = replace(each.key, "_", "-")
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   tags = {
-    Project = "platform-lite"
+    Project = each.key
     Env     = "dev"
   }
 }

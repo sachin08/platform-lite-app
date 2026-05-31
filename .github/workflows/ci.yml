@@ -1,7 +1,7 @@
 name: CI-CD Pipeline
 
 env:
-  SERVICE_NAME: platform-lite   # default ✅
+  SERVICE_NAME: orders   # default ✅
 
 
 on:

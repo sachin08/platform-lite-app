@@ -9,6 +9,16 @@ locals {
       port = 4000
     }
   }
+
+
+  subnets = [
+    "subnet-0cd00ef8dda71af31",
+    "subnet-0d7558e1222c6c6d5",
+    "subnet-09f45433906dbd8ba"
+  ]
+
+  security_groups = ["sg-0bda7e59c0eed1582"]
+
 }
 
 resource "aws_ecs_cluster" "platform_lite" {
@@ -42,36 +52,72 @@ module "services" {
 
   service_name     = "${replace(each.key, "_", "-")}-service"
   cluster_id       = aws_ecs_cluster.platform_lite.id
-  subnets          = [
-    "subnet-0cd00ef8dda71af31",
-    "subnet-0d7558e1222c6c6d5",
-    "subnet-09f45433906dbd8ba"
-  ]
-  security_groups  = ["sg-0bda7e59c0eed1582"]
-
-  target_group_arn = aws_lb_target_group.services[each.key].arn
-  container_name   = "platform-lite-container"
+  subnets          = local.subnets
+  security_groups  = local.security_groups
+  target_group_arn = aws_lb_target_group.services_blue[each.key].arn
+  container_name = "platform-lite-container"
   container_port   = each.value.port
 
-  task_definition  = "platform-lite-task"
+  task_definition  = "${replace(each.key, "_", "-")}-task"
 }
+
+module "services_green" {
+  for_each = local.services
+
+  source = "./modules/ecs-service"
+
+  service_name     = "${replace(each.key, "_", "-")}-green"
+  cluster_id       = aws_ecs_cluster.platform_lite.id
+  subnets          = local.subnets
+  security_groups  = local.security_groups
+  target_group_arn = aws_lb_target_group.services_green[each.key].arn
+  container_name = "platform-lite-container"
+  container_port   = each.value.port
+
+  task_definition  = "${replace(each.key, "_", "-")}-task"
+
+  depends_on = [
+  aws_lb_listener.platform_lite
+  ]
+
+}
+
 
 resource "aws_lb" "platform_lite" {
   name               = "platform-lite-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = ["sg-0bda7e59c0eed1582"]   # reuse your existing SG ✅
-  subnets            = ["subnet-0cd00ef8dda71af31", "subnet-0d7558e1222c6c6d5", "subnet-09f45433906dbd8ba"]  # same as ECS ✅
-
+  subnets = local.subnets
+  security_groups = local.security_groups
   tags = {
     Project = "platform-lite"
   }
 }
 
 
-resource "aws_lb_target_group" "services" {
+resource "aws_lb_target_group" "services_blue" {
   for_each = local.services
-  name = "${replace(each.key, "_", "-")}-tg"
+
+  name     = "${replace(each.key, "_", "-")}-blue"
+  port     = each.value.port
+  protocol = "HTTP"
+  vpc_id   = "vpc-0a1d0b31ff1d3cb8b"
+
+  target_type = "ip"
+
+  health_check {
+    path     = "/health"
+    port     = tostring(each.value.port)
+    protocol = "HTTP"
+    matcher  = "200"
+  }
+}
+
+
+resource "aws_lb_target_group" "services_green" {
+  for_each = local.services
+
+  name     = "${replace(each.key, "_", "-")}-green"
   port     = each.value.port
   protocol = "HTTP"
   vpc_id   = "vpc-0a1d0b31ff1d3cb8b"
@@ -92,8 +138,13 @@ resource "aws_lb_listener" "platform_lite" {
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.services["platform_lite"].arn
+  type = "forward"
+
+  target_group_arn = (
+    var.active_color == "green"
+    ? aws_lb_target_group.services_green["platform_lite"].arn
+    : aws_lb_target_group.services_blue["platform_lite"].arn
+    )
   }
 }
 
@@ -105,7 +156,11 @@ resource "aws_lb_listener_rule" "services" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.services[each.key].arn
+    target_group_arn = (
+    var.active_color == "green"
+    ? aws_lb_target_group.services_green[each.key].arn
+    : aws_lb_target_group.services_blue[each.key].arn
+    )
   }
 
   condition {
@@ -115,18 +170,18 @@ resource "aws_lb_listener_rule" "services" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "platform_lite" {
-  name              = "/ecs/platform-lite-task"
-  retention_in_days = 7
+resource "aws_cloudwatch_log_group" "services" {
+  for_each = local.services
 
-  tags = {
-    Project = "platform-lite"
-  }
+  name = "/ecs/${replace(each.key, "_", "-")}-task"
+  retention_in_days = 7
 }
 
 
 resource "aws_cloudwatch_metric_alarm" "cpu_high" {
-  alarm_name          = "platform-lite-high-cpu"
+  for_each = local.services
+
+  alarm_name          = "${each.key}-high-cpu"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
@@ -137,7 +192,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
 
   dimensions = {
     ClusterName = aws_ecs_cluster.platform_lite.name
-    ServiceName = "platform-lite-service"
+    ServiceName = "${replace(each.key, "_", "-")}-service"
   }
 
   alarm_description = "Triggered when CPU > 70%"
@@ -145,7 +200,9 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
 
 
 resource "aws_cloudwatch_metric_alarm" "memory_high" {
-  alarm_name          = "platform-lite-high-memory"
+    for_each = local.services
+
+  alarm_name          = "${each.key}-high-memory"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
   metric_name         = "MemoryUtilization"
@@ -156,7 +213,7 @@ resource "aws_cloudwatch_metric_alarm" "memory_high" {
 
   dimensions = {
     ClusterName = aws_ecs_cluster.platform_lite.name
-    ServiceName = "platform-lite-service"
+    ServiceName = "${replace(each.key, "_", "-")}-service"
   }
 
   alarm_description = "Triggered when Memory > 70%"

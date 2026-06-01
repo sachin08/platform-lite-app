@@ -93,6 +93,7 @@ jobs:
 
           NEW_TASK_DEF=$(cat task-def.json | jq \
             --arg IMAGE "${{ steps.login-ecr.outputs.registry }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }}" \
+            --arg SERVICE "${SERVICE_NAME}" \
             'del(
               .taskDefinitionArn,
               .revision,
@@ -105,7 +106,7 @@ jobs:
             | .containerDefinitions[0].image = $IMAGE
             | .containerDefinitions[0].healthCheck = {
                 "command": ["CMD-SHELL", "curl -f http://localhost:4000/health || exit 1"],
-                "interval": 30,
+                "interval": 60,
                 "timeout": 5,
                 "retries": 3,
                 "startPeriod": 30
@@ -117,7 +118,7 @@ jobs:
               },
               {
                 "name": "SERVICE_NAME",
-                "value": "${SERVICE_NAME}"
+                "value": $SERVICE
               }
             ]
             ')

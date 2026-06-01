@@ -43,14 +43,17 @@ jobs:
       - name: Detect changed service
         id: detect
         run: |
-          if git rev-parse HEAD^ >/dev/null 2>&1; then
-            DIFF_RANGE="HEAD^ HEAD"
+          echo "Before commit: ${{ github.event.before }}"
+          echo "Current commit: ${{ github.sha }}"
+
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            echo "First commit detected — scanning entire repo"
+            FILES=$(git ls-files)
           else
-            echo "No previous commit found, using HEAD only"
-            DIFF_RANGE="HEAD"
+            FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
           fi
 
-          SERVICE=$(git diff --name-only $DIFF_RANGE | grep '^services/' | cut -d'/' -f2 | uniq | head -n 1)
+          SERVICE=$(echo "$FILES" | grep '^services/' | cut -d'/' -f2 | uniq | head -n 1)
 
           echo "Detected service: $SERVICE"
 

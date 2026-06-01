@@ -1,0 +1,7 @@
+services:
+  platform-lite:
+    path: /api/*
+    port: 4000
+  orders:
+    path: /orders*
+    port: 4000

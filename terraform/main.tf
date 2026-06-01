@@ -161,3 +161,52 @@ resource "aws_cloudwatch_metric_alarm" "memory_high" {
 
   alarm_description = "Triggered when Memory > 70%"
 }
+
+resource "aws_appautoscaling_target" "ecs" {
+  for_each = local.services
+
+  max_capacity       = 3
+  min_capacity       = 1
+  resource_id        = "service/${aws_ecs_cluster.platform_lite.name}/${replace(each.key, "_", "-")}-service"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "cpu" {
+  for_each = local.services
+
+  name               = "${each.key}-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs[each.key].resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs[each.key].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs[each.key].service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 60
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
+
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+  }
+}
+
+
+resource "aws_appautoscaling_policy" "memory" {
+  for_each = local.services
+
+  name               = "${each.key}-memory-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs[each.key].resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs[each.key].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs[each.key].service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 70
+
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+  }
+}

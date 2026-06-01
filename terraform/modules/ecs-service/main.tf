@@ -7,6 +7,9 @@ resource "aws_ecs_service" "this" {
 
   health_check_grace_period_seconds = 60
 
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent         = 200
+
   network_configuration {
     subnets          = var.subnets
     assign_public_ip = true
@@ -17,6 +20,11 @@ resource "aws_ecs_service" "this" {
     target_group_arn = var.target_group_arn
     container_name   = var.container_name
     container_port   = var.container_port
+  }
+
+  deployment_circuit_breaker {
+  enable   = true
+  rollback = true
   }
 
   lifecycle {

@@ -1,7 +1,7 @@
 name: CI-CD Pipeline
 
 env:
-  SERVICE_NAME: orders   # default ✅
+  SERVICE_NAME: platform-lite   # default ✅
 
 
 on:
@@ -40,8 +40,26 @@ jobs:
         id: vars
         run: echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
 
+      - name: Detect changed service
+        id: detect
+        run: |
+          SERVICE=$(git diff --name-only HEAD^ HEAD | grep '^services/' | cut -d'/' -f2 | uniq | head -n 1)
+          echo "Detected service: $SERVICE"
+
+          if [ -z "$SERVICE" ]; then
+            echo "SERVICE_NAME=platform-lite" >> $GITHUB_ENV
+          else
+            echo "SERVICE_NAME=$SERVICE" >> $GITHUB_ENV
+          fi
+
+      - name: Set default service
+        run: |
+          if [ -z "$SERVICE_NAME" ]; then
+            echo "SERVICE_NAME=platform-lite" >> $GITHUB_ENV
+          fi
+    
       - name: Build Docker image
-        run: docker build -t ${{ steps.login-ecr.outputs.registry }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }} .
+        run: docker build -t ${{ steps.login-ecr.outputs.registry }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }} ./services/${{ env.SERVICE_NAME }}
 
       # - name: Run basic check
       #   run: node app.js & sleep 5 && kill $!
@@ -71,7 +89,25 @@ jobs:
               .registeredAt,
               .registeredBy
             )
-            | .containerDefinitions[0].image = $IMAGE')
+            | .containerDefinitions[0].image = $IMAGE
+            | .containerDefinitions[0].healthCheck = {
+                "command": ["CMD-SHELL", "curl -f http://localhost:${PORT:-4000}/health || exit 1"],
+                "interval": 30,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 30
+              }
+            | .containerDefinitions[0].environment = [
+              {
+                "name": "PORT",
+                "value": "4000"
+              },
+              {
+                "name": "SERVICE_NAME",
+                "value": "${SERVICE_NAME}"
+              }
+            ]
+            ')
 
           echo "$NEW_TASK_DEF" > new-task-def.json
 

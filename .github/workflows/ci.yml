@@ -43,7 +43,15 @@ jobs:
       - name: Detect changed service
         id: detect
         run: |
-          SERVICE=$(git diff --name-only HEAD^ HEAD | grep '^services/' | cut -d'/' -f2 | uniq | head -n 1)
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            DIFF_RANGE="HEAD^ HEAD"
+          else
+            echo "No previous commit found, using HEAD only"
+            DIFF_RANGE="HEAD"
+          fi
+
+          SERVICE=$(git diff --name-only $DIFF_RANGE | grep '^services/' | cut -d'/' -f2 | uniq | head -n 1)
+
           echo "Detected service: $SERVICE"
 
           if [ -z "$SERVICE" ]; then
@@ -91,7 +99,7 @@ jobs:
             )
             | .containerDefinitions[0].image = $IMAGE
             | .containerDefinitions[0].healthCheck = {
-                "command": ["CMD-SHELL", "curl -f http://localhost:${PORT:-4000}/health || exit 1"],
+                "command": ["CMD-SHELL", "curl -f http://localhost:4000/health || exit 1"],
                 "interval": 30,
                 "timeout": 5,
                 "retries": 3,

@@ -124,7 +124,7 @@ jobs:
               | .containerDefinitions[0].logConfiguration = {
                   "logDriver": "awslogs",
                   "options": {
-                        "awslogs-group": "/ecs/" + $SERVICE + "-task",
+                        "awslogs-group": "/ecs/\($SERVICE)-task"
                         "awslogs-region": "eu-west-1",
                         "awslogs-stream-prefix": "ecs"
                   }

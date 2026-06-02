@@ -121,6 +121,21 @@ jobs:
                   {"name":"PORT","value":"4000"},
                   {"name":"SERVICE_NAME","value":$SERVICE}
                 ]
+              | .containerDefinitions[0].logConfiguration = {
+                  "logDriver": "awslogs",
+                  "options": {
+                        "awslogs-group": "/ecs/" + $SERVICE + "-task",
+                        "awslogs-region": "eu-west-1",
+                        "awslogs-stream-prefix": "ecs"
+                  }
+                }
+              
+              | .containerDefinitions[0].healthCheck = {
+                "command": ["CMD-SHELL", "wget -qO- http://localhost:4000/health || exit 1"],
+                "interval": 60,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 30
               ')
 
             echo "$NEW_TASK_DEF" > new-task-def.json

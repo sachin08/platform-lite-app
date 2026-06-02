@@ -51,7 +51,7 @@ jobs:
             FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
           fi
 
-          SERVICES=$(echo "$FILES" | grep '^services/' | cut -d'/' -f2 | sort | uniq)
+          SERVICES=$(echo "$FILES" | grep '^services/' | cut -d'/' -f2 | sort | uniq | tr '\n' ' ')
 
           echo "Detected services:"
           echo "$SERVICES"
@@ -69,7 +69,7 @@ jobs:
       - name: Build, Push and Deploy Services
         run: |
           set -euo pipefail
-          
+
           if [ -z "$SERVICES" ]; then
             echo "Nothing to deploy ✅"
             exit 0

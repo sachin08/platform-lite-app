@@ -41,7 +41,7 @@ if (process.env.REDIS_HOST) {
 }
 
 // Health check endpoint (super important in real-world apps)
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.json({ status: 'UP' });
 });
 
@@ -83,7 +83,7 @@ app.get('/api/message', async (req, res) => {
     }
 });
 
-app.get('/info', (req, res) => {
+app.get('/api/info', (req, res) => {
   res.json({
     service: process.env.SERVICE_NAME,
     color: COLOR,

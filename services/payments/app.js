@@ -8,7 +8,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
 
-app.get('/health', (req, res) => {
+app.get('/payments/health', (req, res) => {
   res.send({ status: 'UP' });
 });
 
@@ -19,7 +19,7 @@ app.get('/payments', (req, res) => {
   });
 });
 
-app.get('/info', (req, res) => {
+app.get('/payments/info', (req, res) => {
   res.json({
     service: process.env.SERVICE_NAME,
     color: COLOR,

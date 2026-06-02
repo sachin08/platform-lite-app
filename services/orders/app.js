@@ -9,7 +9,7 @@ app.use(express.json());
 const PORT = process.env.PORT || 4000;
 
 // ✅ health check
-app.get('/health', (req, res) => {
+app.get('/orders/health', (req, res) => {
   res.json({ status: 'UP' });
 });
 
@@ -34,16 +34,8 @@ app.get('/orders', (req, res) => {
   res.json(orders);
 });
 
-// ✅ SAMPLE endpoint
-app.get('/', (req, res) => {
-  res.json({
-    service: "orders-service ✅",
-    message: "Orders API running 🚀"
-  });
-});
 
-
-app.get('/info', (req, res) => {
+app.get('/orders/info', (req, res) => {
   res.json({
     service: process.env.SERVICE_NAME,
     color: COLOR,

@@ -9,7 +9,7 @@ app.use(express.json());
 const PORT = process.env.PORT || 4000;
 
 // ✅ health check
-app.get('/orders/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'UP' });
 });
 

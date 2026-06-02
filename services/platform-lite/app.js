@@ -41,7 +41,7 @@ if (process.env.REDIS_HOST) {
 }
 
 // Health check endpoint (super important in real-world apps)
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
     res.json({ status: 'UP' });
 });
 

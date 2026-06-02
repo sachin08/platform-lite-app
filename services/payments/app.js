@@ -10,7 +10,7 @@ app.get('/health', (req, res) => {
   res.send({ status: 'UP' });
 });
 
-app.get('/info', (req, res) => {
+app.get('/payments', (req, res) => {
   res.json({
     service: "payments",
     message: "Service running 🚀"

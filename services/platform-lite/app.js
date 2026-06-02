@@ -6,6 +6,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 const express = require('express');
 const redis = require('redis');
+const COLOR = process.env.COLOR || "unknown";
+const VERSION = process.env.GITHUB_SHA || "local";
 
 const app = express();
 app.use(express.json());
@@ -79,6 +81,14 @@ app.get('/api/message', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+app.get('/info', (req, res) => {
+  res.json({
+    service: process.env.SERVICE_NAME,
+    color: COLOR,
+    version: VERSION
+  });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

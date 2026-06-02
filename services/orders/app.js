@@ -1,5 +1,8 @@
 const express = require('express');
 const app = express();
+const COLOR = process.env.COLOR || "unknown";
+const VERSION = process.env.GITHUB_SHA || "local";
+
 
 app.use(express.json());
 
@@ -38,6 +41,16 @@ app.get('/', (req, res) => {
     message: "Orders API running 🚀"
   });
 });
+
+
+app.get('/info', (req, res) => {
+  res.json({
+    service: process.env.SERVICE_NAME,
+    color: COLOR,
+    version: VERSION
+  });
+});
+
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Orders service running on port ${PORT}`);

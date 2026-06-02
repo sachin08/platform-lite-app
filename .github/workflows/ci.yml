@@ -120,6 +120,8 @@ jobs:
               | .containerDefinitions[0].environment = [
                   {"name":"PORT","value":"4000"},
                   {"name":"SERVICE_NAME","value":$SERVICE}
+                  {"name":"COLOR","value":"blue"}
+                  {"name":"VERSION","value":$IMAGE}
                 ]
               | .containerDefinitions[0].logConfiguration = {
                   "logDriver": "awslogs",

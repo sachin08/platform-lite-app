@@ -4,6 +4,7 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 
+console.log("platform-lite - test deployment ✅");
 
 const express = require('express');
 const redis = require('redis');

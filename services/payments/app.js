@@ -1,4 +1,6 @@
 
+console.log("payments - test deployment ✅");
+
 const express = require('express');
 const app = express();
 

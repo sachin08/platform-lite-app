@@ -8,7 +8,13 @@ locals {
       path = "/orders*"
       port = 4000
     }
+    payments = {
+        path = "/payments*"
+        port = 4000
+    }
   }
+
+
 
 
   subnets = [

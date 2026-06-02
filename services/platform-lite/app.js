@@ -9,8 +9,9 @@ const express = require('express');
 const redis = require('redis');
 
 const app = express();
+app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 const MESSAGE = "OIDC deployment ✅ 🔐";
 // const MESSAGE = process.env.APP_MESSAGE || "Hello from Platform Lite 🚀";
 
@@ -79,13 +80,6 @@ app.get('/api/message', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});
-
-app.get('/orders', (req, res) => {
-  res.json({
-    service: "orders-service ✅",
-    message: "Orders endpoint working 🚀"
-  });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
